@@ -1,0 +1,490 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Flight Dispatcher • Planificación & Factibilidad RAV</title>
+
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+    <style>
+        :root {
+            --primary: #0f172a;
+            --secondary: #1e3a8a;
+            --accent: #2563eb;
+            --bg: #0b0f19;
+            --card-bg: #1e293b;
+            --text: #f8fafc;
+            --border: #334155;
+            --highlight: #38bdf8;
+            --success: #16a34a;
+            --danger: #dc2626;
+            --gold: #d97706;
+            --gold-bright: #fbbf24;
+        }
+
+        body {
+            font-family: 'Monaco', 'Consolas', 'Courier New', monospace;
+            background-color: var(--bg);
+            color: var(--text);
+            margin: 0;
+            padding: 15px;
+        }
+
+        .container {
+            max-width: 1350px;
+            margin: 0 auto;
+            background: var(--card-bg);
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.5);
+            border: 1px solid var(--border);
+        }
+
+        .header-title {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 20px;
+            border-bottom: 2px solid var(--gold);
+            padding-bottom: 15px;
+            margin-bottom: 20px;
+        }
+
+        .brand-logo-header {
+            width: 90px;
+            height: auto;
+            object-fit: contain;
+            filter: drop-shadow(0px 0px 6px rgba(251, 191, 36, 0.4));
+        }
+
+        .header-text {
+            text-align: center;
+        }
+
+        .header-title h1 {
+            color: var(--gold-bright);
+            margin: 0;
+            font-size: 1.6rem;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+        }
+
+        .header-title h2 {
+            color: #94a3b8;
+            margin: 5px 0 0 0;
+            font-size: 0.85rem;
+            letter-spacing: 1px;
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 15px;
+            margin-bottom: 15px;
+        }
+
+        .card {
+            background: #0f172a;
+            padding: 12px;
+            border-radius: 6px;
+            border: 1px solid var(--border);
+        }
+
+        .card h3 {
+            margin-top: 0;
+            color: var(--highlight);
+            font-size: 0.9rem;
+            border-bottom: 1px dashed var(--border);
+            padding-bottom: 4px;
+        }
+
+        .form-group {
+            margin-bottom: 8px;
+        }
+
+        label {
+            display: block;
+            font-size: 0.72rem;
+            color: #94a3b8;
+            margin-bottom: 2px;
+            text-transform: uppercase;
+        }
+
+        input, select, textarea {
+            width: 100%;
+            padding: 6px;
+            background: #1e293b;
+            color: #00ff66;
+            border: 1px solid var(--border);
+            border-radius: 4px;
+            box-sizing: border-box;
+            font-size: 0.85rem;
+            font-family: inherit;
+            font-weight: bold;
+        }
+
+        textarea {
+            resize: vertical;
+            height: 45px;
+        }
+
+        button.btn-calc {
+            width: 100%;
+            background-color: var(--success);
+            color: white;
+            padding: 10px;
+            border: none;
+            border-radius: 4px;
+            font-size: 1rem;
+            font-weight: bold;
+            cursor: pointer;
+            font-family: inherit;
+            text-transform: uppercase;
+            margin-top: 10px;
+        }
+
+        #map {
+            height: 400px;
+            width: 100%;
+            border-radius: 6px;
+            border: 1px solid var(--border);
+            margin-top: 10px;
+        }
+
+        .terminal-output {
+            background: #000;
+            color: #00ff66;
+            padding: 12px;
+            border-radius: 6px;
+            font-size: 0.8rem;
+            line-height: 1.4;
+            border: 1px solid var(--border);
+            margin-top: 15px;
+            white-space: pre-wrap;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 15px;
+            font-size: 0.8rem;
+        }
+
+        th, td {
+            border: 1px solid var(--border);
+            padding: 6px;
+            text-align: center;
+        }
+
+        th {
+            background-color: var(--secondary);
+            color: white;
+        }
+
+        tr:nth-child(even) {
+            background-color: #0f172a;
+        }
+
+        .note-box {
+            background: #1e1b4b;
+            border: 1px solid #6366f1;
+            padding: 10px;
+            border-radius: 6px;
+            margin-top: 15px;
+            color: #e0e7ff;
+            font-size: 0.8rem;
+        }
+
+        .footer-brand {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            margin-top: 25px;
+            padding: 20px;
+            border-top: 2px solid var(--gold);
+            background: #000;
+            border-radius: 0 0 6px 6px;
+        }
+
+        .brand-logo-footer {
+            width: 110px;
+            height: auto;
+            object-fit: contain;
+            margin-bottom: 10px;
+            filter: drop-shadow(0px 0px 8px rgba(251, 191, 36, 0.5));
+        }
+
+        .footer-brand h3 {
+            color: var(--gold-bright);
+            margin: 0;
+            font-size: 1.1rem;
+            letter-spacing: 1.5px;
+        }
+
+        .footer-brand p {
+            color: #94a3b8;
+            margin: 4px 0 0 0;
+            font-size: 0.75rem;
+            letter-spacing: 1px;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <div class="header-title">
+        <img src="logo.png" alt="Logo Flight Dispatcher" class="brand-logo-header">
+        <div class="header-text">
+            <h1>FLIGHT DISPATCHER</h1>
+            <h2>ANÁLISIS DE FACTIBILIDAD TÉCNICA & COMBUSTIBLE (RAV / OACI)</h2>
+        </div>
+    </div>
+
+    <div class="grid">
+        <div class="card">
+            <h3>1. Datos de Vuelo & Aeronave</h3>
+            <div class="form-group">
+                <label>MATRÍCULA:</label>
+                <input type="text" id="tail_number" value="YV663T">
+            </div>
+            <div class="form-group">
+                <label>PASAJEROS:</label>
+                <input type="number" id="pax_count" value="140">
+            </div>
+            <div class="form-group">
+                <label>DISTANCIA (NM):</label>
+                <input type="number" id="dist_nm" value="829" oninput="calculateAll()">
+            </div>
+            <div class="form-group">
+                <label>DISTANCIA (KM):</label>
+                <input type="number" id="dist_km" value="1533.65" readonly style="color: #fbbf24;">
+            </div>
+            <div class="form-group">
+                <label>FIR MÁS DISTANCIA (ISARA):</label>
+                <input type="text" id="fir_isara" value="56 NM / 103.6 KM" readonly>
+            </div>
+            <div class="form-group">
+                <label>FIR MÁS DISTANCIA (AKPEP):</label>
+                <input type="text" id="fir_akpep" value="49 NM / 90.65 KM" readonly>
+            </div>
+        </div>
+
+        <div class="card">
+            <h3>2. Ruta & Tiempos Operacionales</h3>
+            <div class="form-group">
+                <label>RUTA:</label>
+                <input type="text" id="route_pair" value="SVMI-SLVR" onchange="updateOptimizedRoutesOptions()">
+            </div>
+            <div class="form-group">
+                <label for="opt_routes_select">RUTAS OPTIMIZADAS DESPLEGABLES:</label>
+                <select id="opt_routes_select" onchange="applySelectedOptimizedRoute()">
+                </select>
+            </div>
+            <div class="form-group">
+                <label>RUTA ATS / WAYPOINTS:</label>
+                <textarea id="route_input">SVMI ISARA AKPEP SLVR</textarea>
+            </div>
+            <div class="form-group">
+                <label>HORAS DE VUELO (HH:MM):</label>
+                <input type="text" id="flight_hours" value="05:45">
+            </div>
+            <div class="form-group">
+                <label>TIEMPO BLOQUE ADICIONAL:</label>
+                <input type="text" value="00:30" readonly>
+            </div>
+            <div class="form-group">
+                <label>HORAS BLOQUE TOTAL (HH:MM):</label>
+                <input type="text" id="block_hours" value="06:15" readonly style="color: #fbbf24;">
+            </div>
+        </div>
+
+        <div class="card">
+            <h3>3. Perfil de Combustible (LBS Base)</h3>
+            <div class="form-group">
+                <label>COMBUSTIBLE TOTAL (LBS):</label>
+                <input type="number" id="fob_lbs" value="24000" oninput="calculateAll()">
+            </div>
+            <div class="form-group">
+                <label>CONSUMO DE RUTA (LBS):</label>
+                <input type="number" id="burn_lbs" value="15000" oninput="calculateAll()">
+            </div>
+            <div class="form-group">
+                <label>COMBUSTIBLE REQUERIDO (LBS):</label>
+                <input type="number" id="req_lbs" value="30000" oninput="calculateAll()">
+            </div>
+            <div class="form-group">
+                <label>REMANENTE EN DESTINO (LBS):</label>
+                <input type="number" id="rem_lbs" value="9000" readonly style="color: #ffcc00;">
+            </div>
+        </div>
+    </div>
+
+    <button class="btn-calc" type="button" onclick="calculateAll()">EJECUTAR CÁLCULO DE FACTIBILIDAD Y OFP</button>
+
+    <div id="map"></div>
+
+    <div class="terminal-output" id="terminal">
+=== FLIGHT DISPATCHER SYSTEM ===
+Awaiting Calculation...
+    </div>
+
+    <table>
+        <thead>
+            <tr>
+                <th>DESCRIPCIÓN</th>
+                <th>KILOS (KG)</th>
+                <th>LIBRAS (LBS)</th>
+                <th>LITROS (LTS)</th>
+                <th>GALONES (GAL)</th>
+            </tr>
+        </thead>
+        <tbody id="fuel-table">
+        </tbody>
+    </table>
+
+    <div class="note-box">
+        <strong>NOTA OPERACIONAL SLVR:</strong> LLEGA CON REMANENTE DE COMBUSTIBLE A SLVR DE <strong>10,274 LBS</strong> Y SE DEBE COMPLETAR <strong>24,726 LBS</strong> PARA SALIR CON <strong>35,000 LBS</strong> A SVMI.
+    </div>
+
+    <div class="footer-brand">
+        <img src="logo.png" alt="Logo Flight Dispatcher" class="brand-logo-footer">
+        <h3>FLIGHT DISPATCHER</h3>
+        <p>PLANIFICACIÓN SEGURA — CONTROL OPERACIONAL & DESPACHO RAV</p>
+    </div>
+</div>
+
+<script>
+    const KG_FACTOR = 0.45359237;
+    const LTS_FACTOR = 0.5681818;
+    const GAL_FACTOR = 0.149525;
+
+    const airportsDB = {
+        "SVMI": { lat: 10.6012, lon: -66.9912, name: "Maiquetía Int (SVMI)" },
+        "SLVR": { lat: -17.6447, lon: -63.1353, name: "Viru Viru Int - Santa Cruz (SLVR)" },
+        "ISARA": { lat: 10.4000, lon: -67.6500, name: "ISARA Fix" },
+        "AKPEP": { lat: 10.3000, lon: -67.8000, name: "AKPEP Fix" }
+    };
+
+    let map, markerGroup, polylineLayer;
+
+    function initMap() {
+        map = L.map('map').setView([-3.5, -65.0], 4);
+        L.tileLayer('https://{s}.tile.openstreetmap.fr/hot/{z}/{x}/{y}.png', { maxZoom: 18 }).addTo(map);
+        markerGroup = L.layerGroup().addTo(map);
+
+        updateOptimizedRoutesOptions();
+        calculateAll();
+    }
+
+    function updateOptimizedRoutesOptions() {
+        const select = document.getElementById('opt_routes_select');
+        select.innerHTML = '';
+
+        let opt1 = document.createElement('option');
+        opt1.value = "SVMI ISARA AKPEP SLVR";
+        opt1.innerText = "Ruta Principal ATS [SVMI ISARA AKPEP SLVR]";
+        select.appendChild(opt1);
+
+        let manualOpt = document.createElement('option');
+        manualOpt.value = "MANUAL";
+        manualOpt.innerText = "Ingresar Ruta Manual / Personalizada";
+        select.appendChild(manualOpt);
+    }
+
+    function applySelectedOptimizedRoute() {
+        const select = document.getElementById('opt_routes_select');
+        if (select.value === "MANUAL") {
+            document.getElementById('route_input').focus();
+        } else if (select.value) {
+            document.getElementById('route_input').value = select.value;
+            plotRoute();
+        }
+    }
+
+    function plotRoute() {
+        markerGroup.clearLayers();
+        if (polylineLayer) map.removeLayer(polylineLayer);
+
+        const routeText = document.getElementById('route_input').value.toUpperCase();
+        const tokens = routeText.trim().split(/\s+/);
+        let coords = [];
+
+        tokens.forEach(t => {
+            if (airportsDB[t]) {
+                coords.push([airportsDB[t].lat, airportsDB[t].lon]);
+                L.marker([airportsDB[t].lat, airportsDB[t].lon]).addTo(markerGroup).bindPopup(`<b>${t}</b>`);
+            }
+        });
+
+        if (coords.length > 1) {
+            polylineLayer = L.polyline(coords, { color: '#2563eb', weight: 4 }).addTo(map);
+            map.fitBounds(coords, { padding: [30, 30] });
+        }
+    }
+
+    function calculateAll() {
+        const distNM = parseFloat(document.getElementById('dist_nm').value) || 0;
+        document.getElementById('dist_km').value = (distNM * 1.852).toFixed(2);
+
+        const fobLbs = parseFloat(document.getElementById('fob_lbs').value) || 0;
+        const burnLbs = parseFloat(document.getElementById('burn_lbs').value) || 0;
+        const reqLbs = parseFloat(document.getElementById('req_lbs').value) || 0;
+        
+        const remLbs = fobLbs - burnLbs;
+        document.getElementById('rem_lbs').value = remLbs;
+
+        const tableData = [
+            { name: "COMBUSTIBLE TOTAL", lbs: fobLbs },
+            { name: "CONSUMO", lbs: burnLbs },
+            { name: "COMBUSTIBLE REQUERIDO", lbs: reqLbs },
+            { name: "REMANENTE", lbs: remLbs }
+        ];
+
+        let tbodyHTML = "";
+        tableData.forEach(row => {
+            let kg = row.lbs * KG_FACTOR;
+            let lts = row.lbs * LTS_FACTOR;
+            let gal = row.lbs * GAL_FACTOR;
+
+            tbodyHTML += `<tr>
+                <td><strong>${row.name}</strong></td>
+                <td>${kg.toLocaleString('es-ES', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td>
+                <td>${row.lbs.toLocaleString('es-ES')}</td>
+                <td>${lts.toLocaleString('es-ES', {minimumFractionDigits: 1, maximumFractionDigits: 1})}</td>
+                <td>${gal.toLocaleString('es-ES', {minimumFractionDigits: 1, maximumFractionDigits: 1})}</td>
+            </tr>`;
+        });
+
+        document.getElementById('fuel-table').innerHTML = tbodyHTML;
+
+        const tail = document.getElementById('tail_number').value;
+        const pax = document.getElementById('pax_count').value;
+
+        document.getElementById('terminal').innerText = 
+`================ FLIGHT DISPATCHER FACTIBILIDAD & NAV LOG ================
+AERONAVE / MATRÍCULA: ${tail} | PAX: ${pax} PAXS | RUTA: SVMI-SLVR
+DISTANCIA RUTA: ${distNM} NM (${(distNM * 1.852).toFixed(2)} KM)
+HORAS VUELO: 05:45 HRS | HORAS BLOQUE (+00:30): 06:15 HRS
+PUNTOS DE NOTIFICACIÓN FIR: ISARA (56 NM / 103.6 KM) | AKPEP (49 NM / 90.65 KM)
+-----------------------------------------------------------------------
+[DESGLOSE DE COMBUSTIBLE EN LIBRAS & KILOS]
+- COMBUSTIBLE TOTAL : ${fobLbs} LBS (${(fobLbs * KG_FACTOR).toFixed(2)} KG)
+- CONSUMO RUTA      : ${burnLbs} LBS (${(burnLbs * KG_FACTOR).toFixed(2)} KG)
+- COMBUSTIBLE REQ.  : ${reqLbs} LBS (${(reqLbs * KG_FACTOR).toFixed(2)} KG)
+- REMANENTE ESTIMADO: ${remLbs} LBS (${(remLbs * KG_FACTOR).toFixed(2)} KG)
+-----------------------------------------------------------------------
+ESTADO DE FACTIBILIDAD: ${fobLbs >= reqLbs ? 'CÁLCULO APROBADO / VUELO FACTIBLE' : 'REFIERA RECAUSTE / COMBUSTIBLE INSUFICIENTE'}
+OPERA CON REMANENTE A SLVR DE 10,274 LBS -> REPOSTAR 24,726 LBS PARA RETORNO (35,000 LBS).
+================================================================-------`;
+
+        plotRoute();
+    }
+
+    window.onload = initMap;
+</script>
+
+</body>
+</html>
